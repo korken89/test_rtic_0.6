@@ -1,0 +1,26 @@
+[default.probe]
+# usb_vid = "1209"
+# usb_pid = "da42"
+protocol = "Swd"
+speed = 28000
+
+[default.flashing]
+enabled = true
+
+[default.reset]
+enabled = true
+halt_afterwards = false
+
+[default.general]
+chip = "STM32L412CBUx"
+# chip_descriptions = ["./STM32L4 Series.yaml"]
+
+[default.rtt]
+enabled = true
+show_timestamps = true
+timeout = 3000
+
+# Whether to save rtt history buffer on exit.
+log_enabled = true
+# Where to save rtt history buffer relative to manifest path.
+log_path = "./logs"
