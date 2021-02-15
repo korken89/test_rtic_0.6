@@ -12,7 +12,6 @@ mod app {
     use stm32l4xx_hal::timer::Timer;
     use stm32l4xx_hal::{
         prelude::*,
-        rcc::{ClockSecuritySystem, CrystalBypass, MsiFreq},
         time::Hertz,
         timer,
     };

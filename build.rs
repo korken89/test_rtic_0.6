@@ -11,7 +11,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     // instead of when any part of the source code changes.
     println!("cargo:rerun-if-changed=memory.x");
 
-    File::create(out.join("extra_link.x"))?.write_all(include_bytes!("extra_link.x"))?;
 
     println!("cargo:rustc-link-search={}", out.display());
 
