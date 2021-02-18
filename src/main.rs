@@ -5,16 +5,12 @@ use panic_halt as _;
 
 #[rtic::app(device = stm32l4xx_hal::pac, dispatchers = [USART1])]
 mod app {
+    use rtic::export::monotonic::{Clock, Monotonic};
     use rtic::time::duration::Seconds;
-    use rtic::Monotonic;
     use rtt_target::{rprintln, rtt_init_print};
     use stm32l4xx_hal::pac::TIM2;
     use stm32l4xx_hal::timer::Timer;
-    use stm32l4xx_hal::{
-        prelude::*,
-        time::Hertz,
-        timer,
-    };
+    use stm32l4xx_hal::{prelude::*, time::Hertz, timer};
 
     #[monotonic(binds = TIM2, default = true)]
     type MyMono2 = Timer<TIM2>;
@@ -32,10 +28,7 @@ mod app {
         //
         // Initialize the clocks
         //
-        let clocks = rcc
-            .cfgr
-            .sysclk(80.mhz())
-            .freeze(&mut flash.acr, &mut pwr);
+        let clocks = rcc.cfgr.sysclk(80.mhz()).freeze(&mut flash.acr, &mut pwr);
 
         // let mut delay = DelayCM::new(clocks);
 
@@ -65,6 +58,7 @@ mod app {
     fn bar(_: bar::Context) {
         rprintln!("bar");
         foo::spawn_after(Seconds(1u32)).ok();
+        // foo::spawn_at(MyMono2::now() + Seconds(1u32)).ok();
     }
 
     #[idle]
