@@ -5,8 +5,7 @@ use panic_halt as _;
 
 #[rtic::app(device = stm32l4xx_hal::pac, dispatchers = [USART1])]
 mod app {
-    use rtic::export::monotonic::{Clock, Monotonic};
-    use rtic::time::duration::Seconds;
+    use rtic::time::duration::*;
     use rtt_target::{rprintln, rtt_init_print};
     use stm32l4xx_hal::pac::TIM2;
     use stm32l4xx_hal::timer::Timer;
@@ -29,8 +28,6 @@ mod app {
         // Initialize the clocks
         //
         let clocks = rcc.cfgr.sysclk(80.mhz()).freeze(&mut flash.acr, &mut pwr);
-
-        // let mut delay = DelayCM::new(clocks);
 
         // Setup the monotonic timer
         let mono = timer::Timer::free_running_tim2(
