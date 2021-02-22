@@ -1,7 +1,7 @@
 #![no_main]
 #![no_std]
 
-use panic_halt as _;
+use panic_rtt_target as _;
 
 #[rtic::app(device = stm32l4xx_hal::pac, dispatchers = [USART1])]
 mod app {
