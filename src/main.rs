@@ -9,10 +9,10 @@ mod app {
         consts::{U0, U80},
         DwtSystick,
     };
-    use rtic::time::duration::*;
+    use rtic::time::{duration::*, Instant};
     use rtt_target::{rprintln, rtt_init_print};
-    use stm32l4xx_hal::pac::TIM2;
-    use stm32l4xx_hal::timer::Timer;
+    use stm32l4xx_hal::pac::{TIM15, TIM2};
+    use stm32l4xx_hal::timer::{ExtendedTimer, Timer};
     use stm32l4xx_hal::{prelude::*, time::Hertz, timer};
 
     #[monotonic(binds = TIM2)]
@@ -20,6 +20,9 @@ mod app {
 
     #[monotonic(binds = SysTick, default = true)]
     type DwtMono = DwtSystick<U80, U0, U0>;
+
+    #[monotonic(binds = TIM1_BRK_TIM15)]
+    type HalMono2 = ExtendedTimer<TIM15>;
 
     #[init]
     fn init(cx: init::Context) -> (init::LateResources, init::Monotonics) {
@@ -51,30 +54,46 @@ mod app {
         // Setup the monotonic timer
         let mono2 = DwtSystick::new(&mut dcb, dwt, systick, clocks.sysclk().0);
 
+        let mono3 = ExtendedTimer::new(timer::Timer::free_running_tim15(
+            cx.device.TIM15,
+            clocks,
+            Hertz(1_000_000),
+            true,
+            &mut rcc.apb2,
+        ));
+
         rprintln!("init");
 
         bar::spawn_after(Seconds(1_u32)).ok();
 
-        (init::LateResources {}, init::Monotonics(mono, mono2))
+        (init::LateResources {}, init::Monotonics(mono, mono2, mono3))
     }
 
     #[task]
     fn foo(_: foo::Context) {
-        rprintln!("foo");
+        let now = *DwtMono::now().duration_since_epoch().integer();
+        rprintln!("foo (DWT/SysTick): {:?}", now);
         bar::spawn_after(Seconds(1_u32)).ok();
     }
 
     #[task]
     fn bar(_: bar::Context) {
-        rprintln!("bar");
+        rprintln!("bar (DWT/SysTick)");
         foo::DwtMono::spawn_after(Seconds(1_u32)).ok();
-
         baz::HalMono::spawn_after(Seconds(1_u32)).ok();
+        quox::HalMono2::spawn_after(Seconds(1_u32)).ok();
     }
 
     #[task]
     fn baz(_: baz::Context) {
-        rprintln!("baz");
+        let now = *HalMono::now().duration_since_epoch().integer();
+        rprintln!("baz (TIM2): {:?}", now);
+    }
+
+    #[task]
+    fn quox(_: quox::Context) {
+        let now = *HalMono2::now().duration_since_epoch().integer();
+        rprintln!("quox (TIM15): {:?}", now);
     }
 
     #[idle]
