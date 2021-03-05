@@ -14,8 +14,8 @@ cortex-m                = "0.6.0"
 #heapless                = "0.5.0"
 rtt-target = { version = "0.2.0", features = ["cortex-m"] }
 #cortex-m-rtic = { git = "https://github.com/rtic-rs/cortex-m-rtic", branch = "new_monotonic" }
-cortex-m-rtic = { path = "../cortex-m-rtic" }
-dwt-systick-monotonic = { path = "../dwt-systick-monotonic" }
+cortex-m-rtic = "0.6.0-alpha.1"
+dwt-systick-monotonic = "0.1.0-alpha.0"
 
 [dependencies.stm32l4xx-hal]
 git = "https://github.com/stm32-rs/stm32l4xx-hal"

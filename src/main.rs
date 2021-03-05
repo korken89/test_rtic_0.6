@@ -3,7 +3,7 @@
 
 use panic_rtt_target as _;
 
-#[rtic::app(device = stm32l4xx_hal::pac, dispatchers = [USART1])]
+#[rtic::app(device = stm32l4xx_hal::pac, dispatchers = [USART1, USART2])]
 mod app {
     use dwt_systick_monotonic::{
         consts::{U0, U80},
@@ -21,7 +21,7 @@ mod app {
     #[monotonic(binds = SysTick, default = true)]
     type DwtMono = DwtSystick<U80, U0, U0>;
 
-    #[monotonic(binds = TIM1_BRK_TIM15)]
+    #[monotonic(priority = 4, binds = TIM1_BRK_TIM15)]
     type HalMono2 = ExtendedTimer<TIM15>;
 
     #[init]
@@ -65,6 +65,7 @@ mod app {
         rprintln!("init");
 
         bar::spawn_after(Seconds(1_u32)).ok();
+        periodic::spawn(Instant::new(0)).ok();
 
         (init::LateResources {}, init::Monotonics(mono, mono2, mono3))
     }
@@ -78,7 +79,7 @@ mod app {
 
     #[task]
     fn bar(_: bar::Context) {
-        rprintln!("bar (DWT/SysTick)");
+        // rprintln!("bar (DWT/SysTick)");
         foo::DwtMono::spawn_after(Seconds(1_u32)).ok();
         baz::HalMono::spawn_after(Seconds(1_u32)).ok();
         quox::HalMono2::spawn_after(Seconds(1_u32)).ok();
@@ -94,6 +95,20 @@ mod app {
     fn quox(_: quox::Context) {
         let now = *HalMono2::now().duration_since_epoch().integer();
         rprintln!("quox (TIM15): {:?}", now);
+    }
+
+    #[task(priority = 4)]
+    fn periodic(_: periodic::Context, instant: Instant<ExtendedTimer<TIM15>>) {
+        let now = *HalMono2::now().duration_since_epoch().integer();
+        rprintln!(
+            "periodic (TIM15): {:?} / {:?}",
+            instant.duration_since_epoch().integer(),
+            now
+        );
+
+        let next = instant + Milliseconds(900_u32);
+
+        periodic::HalMono2::spawn_at(next, next).ok();
     }
 
     #[idle]
