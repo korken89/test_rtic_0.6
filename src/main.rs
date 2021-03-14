@@ -79,10 +79,20 @@ mod app {
 
     #[task]
     fn bar(_: bar::Context) {
-        // rprintln!("bar (DWT/SysTick)");
-        foo::DwtMono::spawn_after(Seconds(1_u32)).ok();
-        baz::HalMono::spawn_after(Seconds(1_u32)).ok();
-        quox::HalMono2::spawn_after(Seconds(1_u32)).ok();
+        let r4 = cancel_task::spawn_after(Milliseconds(600_u32), 77);
+        rprintln!("[bar] cancel_task handle: {:x?}", r4);
+        if let Ok(handle) = r4 {
+            let r5 = cancler_task::spawn_after(Milliseconds(300_u32), handle);
+            rprintln!("[bar] cancler_task handle: {:x?}", r5);
+        }
+
+        let r1 = foo::DwtMono::spawn_after(Seconds(1_u32));
+        let r2 = baz::HalMono::spawn_after(Seconds(1_u32));
+        let r3 = quox::HalMono2::spawn_after(Seconds(1_u32));
+
+        rprintln!("[bar] foo handle: {:x?}", r1);
+        rprintln!("[bar] baz handle: {:x?}", r2);
+        rprintln!("[bar] quox handle: {:x?}", r3);
     }
 
     #[task]
@@ -109,6 +119,17 @@ mod app {
         let next = instant + Milliseconds(900_u32);
 
         periodic::HalMono2::spawn_at(next, next).ok();
+    }
+
+    #[task]
+    fn cancler_task(_: cancler_task::Context, handle: crate::app::cancel_task::DwtMono::SpawnHandle) {
+        let r = handle.cancel();
+        rprintln!("Task was canceled! got back val: {:?}", r);
+    }
+
+    #[task]
+    fn cancel_task(_: cancel_task::Context, val: u32) {
+        rprintln!("Cancel task ran! val: {}", val);
     }
 
     #[idle]
