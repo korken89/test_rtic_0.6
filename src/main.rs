@@ -64,10 +64,35 @@ mod app {
 
         rprintln!("init");
 
-        bar::spawn_after(Seconds(1_u32)).ok();
-        periodic::spawn(Instant::new(0)).ok();
+        // bar::spawn_after(Seconds(1_u32)).ok();
+        // periodic::spawn(Instant::new(0)).ok();
+        let handle = reschedule_me::spawn_after(Seconds(3_u32)).unwrap();
+        rprintln!("init, handle = {:x?}", handle);
+        rescheduler::spawn_after(Seconds(1_u32), handle, 5).ok();
 
+        // (init::LateResources {}, init::Monotonics(mono2))
         (init::LateResources {}, init::Monotonics(mono, mono2, mono3))
+    }
+
+    #[task]
+    fn rescheduler(
+        _: rescheduler::Context,
+        handle: reschedule_me::DwtMono::SpawnHandle,
+        counter: u32,
+    ) {
+        let handle = handle.reschedule_after(Seconds(3_u32)).unwrap();
+        if counter > 0 {
+            rescheduler::spawn_after(Seconds(1_u32), handle, counter - 1).ok();
+            rprintln!("rescheduling `reschedule_me` 3 seconds into the future...");
+        } else {
+            rescheduler::spawn_after(Seconds(5_u32), handle, counter - 1).ok();
+            rprintln!("not rescheduling `reschedule_me` should happen...");
+        }
+    }
+
+    #[task]
+    fn reschedule_me(_: reschedule_me::Context) {
+        rprintln!("reschedule_me ran!");
     }
 
     #[task]
@@ -122,7 +147,10 @@ mod app {
     }
 
     #[task]
-    fn cancler_task(_: cancler_task::Context, handle: crate::app::cancel_task::DwtMono::SpawnHandle) {
+    fn cancler_task(
+        _: cancler_task::Context,
+        handle: cancel_task::DwtMono::SpawnHandle,
+    ) {
         let r = handle.cancel();
         rprintln!("Task was canceled! got back val: {:?}", r);
     }
