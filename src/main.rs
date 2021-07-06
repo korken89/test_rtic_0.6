@@ -5,16 +5,26 @@ use panic_rtt_target as _;
 
 #[rtic::app(device = stm32l4xx_hal::pac, dispatchers = [USART1, USART2])]
 mod app {
-    use dwt_systick_monotonic::DwtSystick;
-    use rtic::time::duration::*;
+    // use dwt_systick_monotonic::DwtSystick;
+    // use rtic::time::duration::*;
     use rtt_target::{rprintln, rtt_init_print};
     use stm32l4xx_hal::prelude::*;
 
-    #[monotonic(binds = SysTick, default = true)]
-    type DwtMono = DwtSystick<80_000_000>;
+    #[local]
+    struct Local {
+        a: u32,
+    }
+
+    #[shared]
+    struct Shared {
+        b: i32,
+    }
+
+    // #[monotonic(binds = SysTick, default = true)]
+    // type DwtMono = DwtSystick<80_000_000>;
 
     #[init]
-    fn init(cx: init::Context) -> (init::LateResources, init::Monotonics) {
+    fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         let mut flash = cx.device.FLASH.constrain();
         let mut rcc = cx.device.RCC.constrain();
         let mut pwr = cx.device.PWR.constrain(&mut rcc.apb1r1);
@@ -29,35 +39,27 @@ mod app {
         //
         // Initialize the clocks
         //
-        let clocks = rcc.cfgr.sysclk(80.mhz()).freeze(&mut flash.acr, &mut pwr);
+        let _clocks = rcc.cfgr.sysclk(80.mhz()).freeze(&mut flash.acr, &mut pwr);
 
         // Setup the monotonic timer
-        let mono2 = DwtSystick::new(&mut dcb, dwt, systick, clocks.sysclk().0);
+        // let mono2 = DwtSystick::new(&mut dcb, dwt, systick, clocks.sysclk().0);
 
         rprintln!("init");
 
-        printer::spawn(1).unwrap();
-        printer::spawn_after(Milliseconds(5_000_u32), 6).unwrap();
-        printer::spawn_after(Milliseconds(6_000_u32), 7).unwrap();
-        printer::spawn_after(Milliseconds(7_000_u32), 8).unwrap();
-        printer::spawn_after(Milliseconds(8_000_u32), 9).unwrap();
-        printer::spawn_after(Milliseconds(4_000_u32), 5).unwrap();
-        printer::spawn_after(Milliseconds(3_000_u32), 4).unwrap();
-        printer::spawn_after(Milliseconds(2_000_u32), 3).unwrap();
-        printer::spawn_after(Milliseconds(1_000_u32), 2).unwrap();
+        printer::spawn().unwrap();
 
-        // (init::LateResources {}, init::Monotonics(mono2))
-        (init::LateResources {}, init::Monotonics(mono2))
+        (Shared { b: 3 }, Local { a: 1 }, init::Monotonics {})
     }
 
-    use core::convert::TryInto;
+    #[task(shared = [b])]
+    fn printer(mut cx: printer::Context) {
+        cx.shared.b.lock(|b| *b += 5);
 
-    pub type TEST = u32;
+    }
 
-    #[task(capacity = 16)]
-    fn printer(_cx: printer::Context, val: TEST) {
-        let now: Milliseconds = monotonics::DwtMono::now().duration_since_epoch().try_into().unwrap();
-        rprintln!("Val: {} at {} ms", val, now.integer());
+    #[task(local = [a])]
+    fn t2(cx: t2::Context) {
+        *cx.local.a += 2;
     }
 
     #[idle]
