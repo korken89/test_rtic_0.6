@@ -46,13 +46,13 @@ mod app {
 
         rprintln!("init");
 
-        printer::spawn().unwrap();
+        t1::spawn().unwrap();
 
         (Shared { b: 3 }, Local { a: 1 }, init::Monotonics {})
     }
 
     #[task(shared = [b])]
-    fn printer(mut cx: printer::Context) {
+    fn t1(mut cx: t1::Context) {
         cx.shared.b.lock(|b| *b += 5);
 
     }
