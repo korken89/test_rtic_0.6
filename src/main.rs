@@ -13,6 +13,7 @@ mod app {
     #[local]
     struct Local {
         a: u32,
+        aa: i32,
     }
 
     #[shared]
@@ -23,14 +24,14 @@ mod app {
     // #[monotonic(binds = SysTick, default = true)]
     // type DwtMono = DwtSystick<80_000_000>;
 
-    #[init]
+    #[init(local = [q: i16 = 78])]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         let mut flash = cx.device.FLASH.constrain();
         let mut rcc = cx.device.RCC.constrain();
         let mut pwr = cx.device.PWR.constrain(&mut rcc.apb1r1);
-        let mut dcb = cx.core.DCB;
-        let dwt = cx.core.DWT;
-        let systick = cx.core.SYST;
+        // let mut dcb = cx.core.DCB;
+        // let dwt = cx.core.DWT;
+        // let systick = cx.core.SYST;
 
         rtt_init_print!(NoBlockSkip, 4096);
 
@@ -48,7 +49,7 @@ mod app {
 
         t1::spawn().unwrap();
 
-        (Shared { b: 3 }, Local { a: 1 }, init::Monotonics {})
+        (Shared { b: 3 }, Local { aa: 22, a: 1 }, init::Monotonics {})
     }
 
     #[task(shared = [b])]
@@ -57,12 +58,13 @@ mod app {
 
     }
 
-    #[task(local = [a])]
+    #[task(local = [a, c: i64 = 33])]
     fn t2(cx: t2::Context) {
         *cx.local.a += 2;
+        *cx.local.c += 7;
     }
 
-    #[idle]
+    #[idle(local = [aa, qq: u32 = 8])]
     fn idle(_: idle::Context) -> ! {
         rprintln!("idle");
 
