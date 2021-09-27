@@ -26,6 +26,16 @@ mod app {
 
     #[init(local = [q: i16 = 78])]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
+        cx.device.DBGMCU.cr.modify(|_, w| {
+            w.dbg_sleep()
+                .set_bit()
+                .dbg_standby()
+                .set_bit()
+                .dbg_stop()
+                .set_bit()
+        });
+        cx.device.RCC.ahb1enr.modify(|_, w| w.dma1en().set_bit());
+
         let mut flash = cx.device.FLASH.constrain();
         let mut rcc = cx.device.RCC.constrain();
         let mut pwr = cx.device.PWR.constrain(&mut rcc.apb1r1);
@@ -50,7 +60,6 @@ mod app {
         t1::spawn().ok();
         t2::spawn().ok();
 
-
         t1::spawn_after(Milliseconds(1000_u32)).ok();
         t2::spawn_after(Milliseconds(1000_u32)).ok();
 
@@ -60,7 +69,11 @@ mod app {
         t1::spawn_after(Milliseconds(2000_u32)).ok();
         t2::spawn_after(Milliseconds(2000_u32)).ok();
 
-        (Shared { b: 3 }, Local { aa: 22, a: 1 }, init::Monotonics(mono2))
+        (
+            Shared { b: 3 },
+            Local { aa: 22, a: 1 },
+            init::Monotonics(mono2),
+        )
     }
 
     #[task(capacity = 4, shared = [b])]
@@ -69,7 +82,6 @@ mod app {
             *b += 5;
             rprintln!("b: {}", *b);
         });
-
     }
 
     #[task(capacity = 4, local = [a, c: i64 = 33])]
